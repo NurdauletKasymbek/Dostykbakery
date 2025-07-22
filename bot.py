@@ -2,7 +2,7 @@ from flask import Flask, request
 import telebot
 import os
 
-# Қауіпсіздік үшін токенді ортадан аламыз
+# Қауіпсіздік үшін токендер орта айнымалылардан алынады
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = int(os.environ.get('ADMIN_ID', '6529188202'))
 
@@ -17,12 +17,19 @@ user_data = {}
 
 COMMAND_BUTTONS = ["🍞 Нанға тапсырыс беру", "📞 Байланыс нөмірі"]
 
+# 🔹 Telegram жіберетін POST сұранысты қабылдайды
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = telebot.types.Update.de_json(request.data.decode("utf-8"))
     bot.process_new_updates([update])
     return '', 200
 
+# 🔹 Render немесе браузер жіберетін GET сұранысқа жауап
+@app.route('/', methods=['GET'])
+def index():
+    return 'Bot is running!', 200
+
+# 🔹 Басты мәзір
 def main_menu_keyboard():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(*COMMAND_BUTTONS)
@@ -31,6 +38,7 @@ def main_menu_keyboard():
 def reset_user_state(chat_id):
     user_data[chat_id] = {}
 
+# 🔹 /start
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     reset_user_state(message.chat.id)
@@ -146,4 +154,7 @@ def handle_pdf_check(message):
     bot.send_message(chat_id, "✅ Төлем чегі қабылданды. Тапсырысыңыз өңделуде. Рақмет!", reply_markup=main_menu_keyboard())
     bot.send_document(ADMIN_ID, message.document.file_id, caption=caption)
 
-# Flask қолданатындықтан, polling қажет емес
+# 🔹 Render үшін қажет: Flask қолданбасын іске қосу
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
